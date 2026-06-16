@@ -1,0 +1,56 @@
+﻿{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>模型版本配置</h1>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>当前生产版本</h2>
+  {% if production %}
+    <dl class="definition-grid">
+      <dt>版本</dt><dd>{{ production.version_code }}</dd>
+      <dt>文件</dt><dd>{{ production.artifact_path }}</dd>
+      <dt>特征数</dt><dd>{{ production.feature_schema_json.feature_order|length }}</dd>
+      <dt>启用时间</dt><dd>{{ production.activated_at }}</dd>
+    </dl>
+  {% else %}
+    <p class="empty">当前没有启用模型。需要先验证并启用模型后，完整模型评估才能运行。</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>全部版本</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>版本</th>
+          <th>状态</th>
+          <th>模型家族</th>
+          <th>文件</th>
+          <th>SHA256</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for version in versions %}
+        <tr>
+          <td>{{ version.version_code }}</td>
+          <td><span class="status status-{{ version.status|lower }}">{{ version.get_status_display }}</span></td>
+          <td>{{ version.model_family }}</td>
+          <td>{{ version.artifact_path }}</td>
+          <td class="mono">{{ version.sha256|slice:":12" }}...</td>
+          <td>{{ version.status_message }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty">尚未登记模型版本。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+

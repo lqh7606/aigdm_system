@@ -1,0 +1,19 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>无权限访问</h1>
+    <p>{{ error_code|default:"GDM-403-001" }}</p>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>操作被拒绝</h2>
+  <p class="empty">{{ message|default:"没有权限执行该操作。" }}</p>
+  <div class="form-actions-row">
+    <button type="button" class="button-secondary" onclick="history.back()">返回上一页</button>
+    <a class="link-button button-large" href="/">返回首页</a>
+  </div>
+</section>
+{% endblock %}

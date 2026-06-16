@@ -1,0 +1,54 @@
+﻿<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>妊娠期糖尿病辅助诊疗系统</title>
+  <style>
+    html, body { margin: 0 !important; padding: 0 !important; width: 100%; min-height: 100%; }
+    body > .app-shell { position: fixed; inset: 0; margin: 0; }
+  </style>
+  <link rel="stylesheet" href="/static/css/app.css?v=20260611-record-list-pagination">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">辅助诊疗系统</div>
+      <nav>
+        <a class="{% if request.path == "/" %}active{% endif %}" href="/">首页</a>
+        {% if can_view_records %}<a class="{% if '/records/' in request.path %}active{% endif %}" href="/records/">孕妇档案</a>{% endif %}
+        {% if can_view_labs %}<a class="{% if '/labs/' in request.path %}active{% endif %}" href="/labs/">检验数据</a>{% endif %}
+        {% if can_view_risk %}<a class="{% if '/risk/' in request.path %}active{% endif %}" href="/risk/">风险评估</a>{% endif %}
+        {% if can_view_followups %}<a class="{% if '/followups/' in request.path %}active{% endif %}" href="/followups/">随访闭环</a>{% endif %}
+        {% if can_view_integrations %}<a class="{% if '/integrations/' in request.path %}active{% endif %}" href="/integrations/">数据接入</a>{% endif %}
+        {% if can_manage_admin_backend %}<a href="/admin/">管理后台</a>{% endif %}
+      </nav>
+    </aside>
+    <main class="content">
+      <header class="topbar">
+        <div class="topbar-user">
+          <strong>当前用户：{{ request.user.get_username }}</strong>
+          <span>{{ request.user.userprofile.get_role_display|default:"未配置角色" }}</span>
+          <span>{{ request.user.userprofile.department|default:"未配置科室" }}</span>
+          <span>{{ request.user.userprofile.get_data_scope_display|default:"未配置数据范围" }}</span>
+        </div>
+        <div class="topbar-actions">
+          <a href="{% url 'accounts:profile' %}">个人信息</a>
+          <a href="{% url 'accounts:logout' %}">退出登录</a>
+        </div>
+      </header>
+      {% block messages %}
+        {% if messages %}
+          <div class="messages">
+            {% for message in messages %}
+              <div class="notice {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endblock %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>
+

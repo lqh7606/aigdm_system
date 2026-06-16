@@ -1,0 +1,147 @@
+{% extends "base/layout.html" %}
+
+{% block messages %}
+  {% if messages %}
+    {% for message in messages %}
+      {% if "success" in message.tags %}
+        <dialog class="confirm-dialog profile-feedback-dialog" data-auto-open>
+          <form method="dialog">
+            <h3>操作成功</h3>
+            <p>{{ message }}</p>
+            <div class="dialog-actions">
+              <button type="submit" value="confirm">知道了</button>
+            </div>
+          </form>
+        </dialog>
+      {% else %}
+        <div class="messages">
+          <div class="notice {{ message.tags }}">{{ message }}</div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>个人信息</h1>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>账户权限</h2>
+  <dl class="definition-grid">
+    <dt>用户名</dt><dd>{{ request.user.username }}</dd>
+    <dt>角色权限</dt><dd>{{ profile.get_role_display }}</dd>
+    <dt>所属科室</dt><dd>{{ profile.department|default:"-" }}</dd>
+    <dt>数据范围</dt><dd>{{ profile.get_data_scope_display }}</dd>
+  </dl>
+</section>
+
+<section class="panel">
+  <h2>基础信息</h2>
+  <form method="post" class="form-grid" data-confirm-submit="保存个人信息" data-confirm-message="确认保存个人信息修改吗？">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="profile">
+    <label><span>姓名</span>{{ profile_form.first_name }}</label>
+    <label><span>邮箱</span>{{ profile_form.email }}</label>
+    <label><span>联系电话</span>{{ profile_form.mobile }}</label>
+    {% if profile_form.errors %}
+      <div class="form-error form-wide">{{ profile_form.errors }}</div>
+    {% endif %}
+    <div class="form-actions-row">
+      <button type="submit">保存个人信息</button>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>修改密码</h2>
+  <form method="post" class="form-grid" data-confirm-submit="修改密码" data-confirm-message="确认修改密码吗？">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="password">
+    <label><span>当前密码</span>{{ password_form.old_password }}</label>
+    <label><span>新密码</span>{{ password_form.new_password1 }}</label>
+    <label><span>确认新密码</span>{{ password_form.new_password2 }}</label>
+    {% if password_form.errors %}
+      <div class="form-error form-wide">{{ password_form.errors }}</div>
+    {% endif %}
+    <div class="form-actions-row">
+      <button type="submit">修改密码</button>
+    </div>
+  </form>
+</section>
+
+<dialog class="confirm-dialog" id="profile-confirm-dialog">
+  <form method="dialog">
+    <h3 id="profile-confirm-title">确认操作</h3>
+    <p id="profile-confirm-message">确认继续吗？</p>
+    <div class="dialog-actions">
+      <button type="submit" value="cancel" class="button-secondary">取消</button>
+      <button type="submit" value="confirm">确认</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  (function () {
+    var content = document.querySelector(".content");
+    window.addEventListener("load", function () {
+      window.scrollTo(0, 0);
+      if (content) {
+        content.scrollTo(0, 0);
+      }
+    });
+
+    document.querySelectorAll("dialog[data-auto-open]").forEach(function (dialog) {
+      if (typeof dialog.showModal === "function") {
+        dialog.showModal();
+      } else {
+        var message = dialog.querySelector("p");
+        window.alert(message ? message.textContent.trim() : "操作成功");
+      }
+    });
+
+    var confirmDialog = document.getElementById("profile-confirm-dialog");
+    var confirmTitle = document.getElementById("profile-confirm-title");
+    var confirmMessage = document.getElementById("profile-confirm-message");
+    var pendingForm = null;
+
+    document.querySelectorAll("form[data-confirm-submit]").forEach(function (form) {
+      form.addEventListener("submit", function (event) {
+        if (form.dataset.confirmed === "true") {
+          delete form.dataset.confirmed;
+          return;
+        }
+
+        event.preventDefault();
+
+        if (!confirmDialog || typeof confirmDialog.showModal !== "function") {
+          if (window.confirm(form.dataset.confirmMessage || "确认继续吗？")) {
+            form.dataset.confirmed = "true";
+            form.requestSubmit ? form.requestSubmit() : form.submit();
+          }
+          return;
+        }
+
+        pendingForm = form;
+        confirmTitle.textContent = form.dataset.confirmSubmit || "确认操作";
+        confirmMessage.textContent = form.dataset.confirmMessage || "确认继续吗？";
+        confirmDialog.showModal();
+      });
+    });
+
+    if (confirmDialog) {
+      confirmDialog.addEventListener("close", function () {
+        if (confirmDialog.returnValue === "confirm" && pendingForm) {
+          pendingForm.dataset.confirmed = "true";
+          pendingForm.requestSubmit ? pendingForm.requestSubmit() : pendingForm.submit();
+        }
+        pendingForm = null;
+        confirmDialog.returnValue = "";
+      });
+    }
+  })();
+</script>
+{% endblock %}

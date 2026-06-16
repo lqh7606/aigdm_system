@@ -1,0 +1,81 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>检验数据</h1>
+  </div>
+  {% if can_create_lab_result %}
+    <a class="link-button button-large" href="{% url 'labs:create_result' %}">新增检验</a>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="section-header lab-list-header">
+    <h2>检验结果</h2>
+  </div>
+  <form method="get" class="search-form lab-search-form">
+    <input class="form-control" name="q" value="{{ q }}" placeholder="搜索姓名、院内就诊号、检验项目">
+    <select class="form-control" name="record">
+      <option value="">全部档案</option>
+      {% for record in records %}
+        <option value="{{ record.pk }}" {% if record_id == record.pk|stringformat:"s" %}selected{% endif %}>{{ record.name }}（{{ record.record_no }}）</option>
+      {% endfor %}
+    </select>
+    <label class="checkbox-field pending-filter">
+      <input name="pending" value="1" type="checkbox" {% if pending_only %}checked{% endif %}>
+      仅看待确认异常
+    </label>
+    <button class="search-button-spaced" type="submit">搜索</button>
+    <a class="link-button search-reset-button" href="{% url 'labs:list' %}">重置</a>
+  </form>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>姓名</th>
+          <th>院内就诊号</th>
+          <th>项目</th>
+          <th>结果</th>
+          <th>来源</th>
+          <th>异常</th>
+          <th>确认状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in results %}
+        <tr>
+          <td>{{ item.maternal_record.name }}</td>
+          <td>{{ item.maternal_record.record_no }}</td>
+          <td>{{ item.item_name }}</td>
+          <td>{{ item.value }} {{ item.unit }}</td>
+          <td>{{ item.source_type }}</td>
+          <td>{% if item.is_abnormal %}是{% else %}否{% endif %}</td>
+          <td>{{ item.get_confirmation_status_display }}</td>
+          <td>
+            <div class="row-actions">
+              <a class="link-button" href="{% url 'maternal_records:detail' item.maternal_record_id %}">档案</a>
+              {% if item.confirmation_status == "PENDING" and can_confirm_lab %}
+                <form method="post" action="{% url 'labs:confirm' item.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="decision" value="confirm">
+                  <button type="submit">确认</button>
+                </form>
+                <form method="post" action="{% url 'labs:confirm' item.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="decision" value="reject">
+                  <button class="button-secondary" type="submit">排除</button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty">暂无检验数据。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

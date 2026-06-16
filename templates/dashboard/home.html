@@ -1,0 +1,90 @@
+﻿{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>首页</h1>
+  </div>
+</section>
+
+<section class="metrics">
+  <article>
+    <span>在管档案</span>
+    <strong>{{ record_count }}</strong>
+  </article>
+  <article>
+    <span>待确认异常</span>
+    <strong>{{ pending_abnormal }}</strong>
+  </article>
+  <article>
+    <span>待随访任务</span>
+    <strong>{{ pending_followups }}</strong>
+  </article>
+  <article>
+    <span>高危评估</span>
+    <strong>{{ high_risk_count }}</strong>
+  </article>
+</section>
+
+<section class="panel">
+  <h2>系统通知</h2>
+  {% if notices %}
+    <div class="notice-list">
+      {% for notice in notices %}
+        <article class="notice-item{% if notice.is_pinned %} notice-item-pinned{% endif %}{% if notice.importance == 3 %} notice-item-urgent{% elif notice.importance == 2 %} notice-item-important{% endif %}">
+          <div class="notice-summary">
+            {% if notice.link_url %}
+              <a class="notice-title-link" href="{{ notice.link_url }}">{{ notice.title }}</a>
+            {% else %}
+              <button class="notice-title-button" type="button" onclick="document.getElementById('notice-dialog-{{ notice.pk }}').showModal()">{{ notice.title }}</button>
+            {% endif %}
+            <time datetime="{{ notice.updated_at|date:'c' }}">{{ notice.updated_at|date:"Y-m-d H:i" }}</time>
+          </div>
+          {% if not notice.link_url %}
+            <dialog class="confirm-dialog notice-dialog" id="notice-dialog-{{ notice.pk }}">
+              <form method="dialog">
+                <h3>{{ notice.title }}</h3>
+                <p class="notice-dialog-time">{{ notice.updated_at|date:"Y-m-d H:i" }}</p>
+                <div class="notice-dialog-content">{{ notice.content|linebreaksbr }}</div>
+                <div class="dialog-actions">
+                  <button type="submit" class="button-secondary">关闭</button>
+                </div>
+              </form>
+            </dialog>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">暂无系统通知。</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>当前生产模型</h2>
+  {% if production_model %}
+    <dl class="definition-grid">
+      <dt>版本</dt><dd>{{ production_model.version_code }}</dd>
+      <dt>状态</dt><dd><span class="status status-production">{{ production_model.get_status_display }}</span></dd>
+      <dt>启用时间</dt><dd>{{ production_model.activated_at|default:"-" }}</dd>
+      <dt>说明</dt><dd>{{ production_model.status_message|default:"-" }}</dd>
+    </dl>
+  {% else %}
+    <p class="empty">当前没有启用的生产模型，风险评估会自动进入规则评估。</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>接口状态</h2>
+  {% if latest_task %}
+    <dl class="definition-grid">
+      <dt>最近任务</dt><dd>{{ latest_task.source.name }}</dd>
+      <dt>任务状态</dt><dd>{{ latest_task.get_status_display }}</dd>
+      <dt>读取数量</dt><dd>{{ latest_task.pulled_count }}</dd>
+    </dl>
+  {% else %}
+    <p class="empty">尚未执行接口拉取任务。</p>
+  {% endif %}
+</section>
+{% endblock %}
+

@@ -1,0 +1,174 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>孕妇档案</h1>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>手工建档</h2>
+  {% if can_create_record %}
+  <form method="post" action="{% url 'maternal_records:create' %}" class="form-grid">
+    {% csrf_token %}
+    <label><span>院内就诊号</span><input class="form-control" name="record_no" required></label>
+    <label><span>姓名</span><input class="form-control" name="name" required></label>
+    <label><span>证件号</span><input class="form-control" name="id_card"></label>
+    <label><span>联系电话</span><input class="form-control" name="phone"></label>
+    <label><span>年龄</span><input class="form-control" name="age" type="number" min="12" max="60"></label>
+    <label><span>末次月经</span><input class="form-control" name="last_menstrual_period" type="date"></label>
+    <label><span>预产期</span><input class="form-control" name="expected_delivery_date" type="date"></label>
+    <label><span>当前孕周</span><input class="form-control" name="gestational_week" type="number" step="0.1" min="0" max="45"></label>
+    <label><span>身高cm</span><input class="form-control" name="height_cm" type="number" step="0.1"></label>
+    <label><span>孕前体重kg</span><input class="form-control" name="pre_preg_weight_kg" type="number" step="0.1"></label>
+    <label><span>收缩压</span><input class="form-control" name="systolic_bp" type="number"></label>
+    <label><span>舒张压</span><input class="form-control" name="diastolic_bp" type="number"></label>
+    <div class="form-actions-row">
+      <label class="checkbox-field"><input name="diabetes_before_pregnancy" type="checkbox"> 已确诊孕前糖尿病</label>
+      <button type="submit">保存档案</button>
+    </div>
+  </form>
+  {% else %}
+    <p class="empty">当前角色无手工建档权限。</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="section-title-row">
+    <div>
+      <h2>档案列表</h2>
+      {% if records_page.paginator.count %}
+        <span class="subtle-text">共 {{ records_page.paginator.count }} 条，第 {{ records_page.number }} / {{ records_page.paginator.num_pages }} 页</span>
+      {% endif %}
+    </div>
+    <form method="get" class="page-size-form">
+      <label>
+        <span>每页显示</span>
+        <select class="form-control" name="page_size">
+          {% for option in page_size_options %}
+            <option value="{{ option }}"{% if option == page_size %} selected{% endif %}>{{ option }} 条</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit">应用</button>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>院内就诊号</th>
+          <th>姓名</th>
+          <th>年龄</th>
+          <th>孕周</th>
+          <th>孕前BMI</th>
+          <th>来源</th>
+          <th>状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in records %}
+        <tr>
+          <td>{{ record.record_no }}</td>
+          <td>{{ record.name }}</td>
+          <td>{{ record.age|default:"-" }}</td>
+          <td>{{ record.gestational_week|default:"-" }}</td>
+          <td>{{ record.pre_preg_bmi|default:"-" }}</td>
+          <td>{{ record.get_source_type_display }}</td>
+          <td>{{ record.get_status_display }}</td>
+          <td>
+            <div class="row-actions">
+              <a class="link-button" href="{% url 'maternal_records:detail' record.pk %}">查看</a>
+              {% if record.pk in pending_deletion_ids %}
+                <span class="status status-warning record-delete-pending">删除待审批</span>
+              {% elif can_request_record_deletion %}
+                <button class="record-delete-button" type="button" onclick="document.getElementById('delete-dialog-{{ record.pk }}').showModal()">删除</button>
+                <dialog class="confirm-dialog" id="delete-dialog-{{ record.pk }}">
+                  <form method="post" action="{% url 'maternal_records:delete_request' record.pk %}">
+                    {% csrf_token %}
+                    <h3>确认提交删除申请</h3>
+                    <p>档案不会立即删除，需系统管理员审批。</p>
+                    <label class="delete-reason-field">
+                      <span>删除原因</span>
+                      <textarea class="form-control" name="reason" rows="4" required></textarea>
+                    </label>
+                    <div class="dialog-actions">
+                      <button type="button" class="button-secondary" onclick="document.getElementById('delete-dialog-{{ record.pk }}').close()">取消</button>
+                      <button type="submit" class="button-danger">提交删除申请</button>
+                    </div>
+                  </form>
+                </dialog>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty">暂无档案。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if records_page.paginator.num_pages > 1 %}
+    <div class="pagination-bar">
+      <div class="pagination-links">
+        {% if records_page.has_previous %}
+          <a class="link-button" href="?page=1&page_size={{ page_size }}">首页</a>
+          <a class="link-button" href="?page={{ records_page.previous_page_number }}&page_size={{ page_size }}">上一页</a>
+        {% else %}
+          <span class="pagination-disabled">首页</span>
+          <span class="pagination-disabled">上一页</span>
+        {% endif %}
+        <span class="pagination-current">第 {{ records_page.number }} / {{ records_page.paginator.num_pages }} 页</span>
+        {% if records_page.has_next %}
+          <a class="link-button" href="?page={{ records_page.next_page_number }}&page_size={{ page_size }}">下一页</a>
+          <a class="link-button" href="?page={{ records_page.paginator.num_pages }}&page_size={{ page_size }}">末页</a>
+        {% else %}
+          <span class="pagination-disabled">下一页</span>
+          <span class="pagination-disabled">末页</span>
+        {% endif %}
+      </div>
+      <form method="get" class="pagination-jump">
+        <input type="hidden" name="page_size" value="{{ page_size }}">
+        <label>
+          <span>跳至</span>
+          <input class="form-control" name="page" type="number" min="1" max="{{ records_page.paginator.num_pages }}" value="{{ records_page.number }}">
+        </label>
+        <button type="submit">跳转</button>
+      </form>
+    </div>
+  {% endif %}
+</section>
+
+{% if can_merge_record %}
+<section class="panel">
+  <h2>档案合并</h2>
+  <form method="post" action="{% url 'maternal_records:merge' %}" class="form-grid">
+    {% csrf_token %}
+    <label>
+      <span>来源档案</span>
+      <select class="form-control" name="source_id" required>
+        <option value="">请选择来源档案</option>
+        {% for record in merge_targets %}
+          <option value="{{ record.pk }}">{{ record.name }}（{{ record.record_no }}）</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>目标档案</span>
+      <select class="form-control" name="target_id" required>
+        <option value="">请选择目标档案</option>
+        {% for record in merge_targets %}
+          <option value="{{ record.pk }}">{{ record.name }}（{{ record.record_no }}）</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="form-wide"><span>合并原因</span><textarea class="form-control" name="reason" rows="3" required></textarea></label>
+    <div class="form-actions-row">
+      <button type="submit">提交合并</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

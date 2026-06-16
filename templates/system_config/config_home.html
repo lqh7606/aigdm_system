@@ -1,0 +1,99 @@
+﻿{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>规则阈值配置</h1>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>检验阈值</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>编码</th>
+          <th>名称</th>
+          <th>阈值</th>
+          <th>单位</th>
+          <th>适用场景</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in thresholds %}
+        <tr>
+          <td>{{ item.code }}</td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.value }}</td>
+          <td>{{ item.unit|default:"-" }}</td>
+          <td>{{ item.applies_to|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty">暂无阈值配置。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>评估规则</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>编码</th>
+          <th>名称</th>
+          <th>说明</th>
+          <th>启用</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in rules %}
+        <tr>
+          <td>{{ item.code }}</td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.description|default:"-" }}</td>
+          <td>{% if item.is_active %}是{% else %}否{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="empty">暂无规则配置。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>数据保留策略</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>编码</th>
+          <th>名称</th>
+          <th>保留天数</th>
+          <th>到期动作</th>
+          <th>启用</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in policies %}
+        <tr>
+          <td>{{ item.code }}</td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.retention_days }}</td>
+          <td>{{ item.action }}</td>
+          <td>{% if item.enabled %}是{% else %}否{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty">暂无保留策略。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+

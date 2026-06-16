@@ -1,0 +1,248 @@
+:root {
+  --aigdm-admin-ink: #11616b;
+  --aigdm-admin-mint: #7bbdb6;
+  --aigdm-admin-mist: #ebf4f8;
+  --aigdm-admin-peach: #fed9cd;
+  --aigdm-admin-coral: #dc8b70;
+  --aigdm-admin-border: #cfe2e4;
+  --aigdm-admin-header-height: 64px;
+  --aigdm-admin-breadcrumb-height: 40px;
+  --aigdm-admin-fixed-chrome-height: calc(var(--aigdm-admin-header-height) + var(--aigdm-admin-breadcrumb-height));
+}
+
+body:not(.dashboard) #container {
+  padding-top: var(--aigdm-admin-fixed-chrome-height);
+}
+
+body.dashboard #container {
+  padding-top: var(--aigdm-admin-header-height);
+}
+
+#header {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  height: var(--aigdm-admin-header-height);
+  min-height: 0;
+  box-sizing: border-box;
+  background: var(--header-bg, #417690);
+  border-bottom: 0;
+  box-shadow: 0 2px 12px rgb(17 97 107 / 0.22);
+  overflow: visible;
+}
+
+#branding h1,
+#branding h1 a:link,
+#branding h1 a:visited {
+  color: #ffffff !important;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+#user-tools {
+  color: var(--aigdm-admin-mist);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+#user-tools a,
+#user-tools button {
+  color: #ffffff !important;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#user-tools button {
+  border-color: rgb(254 217 205 / 0.68);
+}
+
+#user-tools .theme-toggle {
+  color: var(--aigdm-admin-mist);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#nav-sidebar {
+  position: sticky;
+  top: var(--aigdm-admin-header-height);
+  max-height: calc(100vh - var(--aigdm-admin-header-height));
+  overflow-y: auto;
+  border-right: 1px solid var(--aigdm-admin-border);
+}
+
+#toggle-nav-sidebar {
+  top: var(--aigdm-admin-header-height);
+  max-height: calc(100vh - var(--aigdm-admin-header-height));
+}
+
+#nav-sidebar .module caption,
+#nav-sidebar .module h2 {
+  font-weight: 800;
+}
+
+.breadcrumbs {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: auto;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  word-spacing: normal;
+}
+
+body:not(.dashboard) #container > nav {
+  position: fixed !important;
+  top: var(--aigdm-admin-header-height) !important;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  height: var(--aigdm-admin-breadcrumb-height);
+  min-height: var(--aigdm-admin-breadcrumb-height);
+  box-sizing: border-box;
+  background: var(--breadcrumbs-bg);
+}
+
+body:not(.dashboard) .breadcrumbs {
+  position: static !important;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  margin: 0 !important;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+body:not(.dashboard) #main {
+  padding-top: 0;
+}
+
+body:not(.dashboard) #nav-sidebar {
+  top: var(--aigdm-admin-fixed-chrome-height);
+  max-height: calc(100vh - var(--aigdm-admin-fixed-chrome-height));
+}
+
+body:not(.dashboard) #toggle-nav-sidebar {
+  top: var(--aigdm-admin-fixed-chrome-height);
+  max-height: calc(100vh - var(--aigdm-admin-fixed-chrome-height));
+}
+
+body.app-auth.model-group.change-list .object-tools .aigdm-default-permissions-item {
+  height: 28px;
+}
+
+body.app-auth.model-group.change-list .object-tools .aigdm-default-permissions-form {
+  display: inline-flex;
+  float: left;
+  height: 28px;
+  margin: 0;
+}
+
+body.app-auth.model-group.change-list .object-tools .aigdm-default-permissions-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: max-content;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid rgb(17 97 107 / 0.88);
+  border-radius: 6px;
+  background: var(--aigdm-admin-ink);
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgb(17 97 107 / 0.18);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+body.app-auth.model-group.change-list .object-tools .aigdm-default-permissions-button:hover,
+body.app-auth.model-group.change-list .object-tools .aigdm-default-permissions-button:focus {
+  background: #0c4f58;
+  border-color: #0c4f58;
+  box-shadow: 0 0 0 2px rgb(123 189 182 / 0.35);
+}
+
+body.app-auth.model-group.change-list .object-tools .aigdm-default-permissions-button:focus {
+  outline: none;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --aigdm-admin-header-height: 116px;
+  }
+
+  #header {
+    padding: 12px 30px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --aigdm-admin-header-height: 132px;
+    --aigdm-admin-breadcrumb-height: 44px;
+  }
+
+  #header {
+    position: fixed !important;
+    height: var(--aigdm-admin-header-height);
+    min-height: 0;
+    padding: 10px 20px !important;
+  }
+
+  #branding h1,
+  #branding h1 a:link,
+  #branding h1 a:visited {
+    font-size: 20px;
+  }
+
+  #user-tools,
+  #user-tools a,
+  #user-tools button,
+  #user-tools .theme-toggle {
+    font-size: 13px;
+  }
+
+  #nav-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  body:not(.dashboard) .breadcrumbs {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  body.app-auth.model-group.change-list .object-tools {
+    float: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 0;
+  }
+
+  body.app-auth.model-group.change-list .object-tools li {
+    float: none;
+    margin-left: 0;
+  }
+
+  body.app-auth.model-group.change-list .object-tools .aigdm-default-permissions-form,
+  body.app-auth.model-group.change-list .object-tools .aigdm-default-permissions-button {
+    width: 100%;
+  }
+
+  body.app-auth.model-group.change-list .object-tools .aigdm-default-permissions-item {
+    width: 100%;
+  }
+}

@@ -1,0 +1,168 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>数据接入</h1>
+  </div>
+</section>
+
+<section class="import-panel-grid">
+  <section class="panel">
+    <div class="section-header">
+      <h2>孕妇档案导入</h2>
+      {% if maternal_template %}
+        <span class="subtle-text">当前模板：{{ maternal_template.name }}</span>
+      {% endif %}
+    </div>
+    {% if can_upload_excel_import %}
+    <form method="post" action="{% url 'integrations:upload_import_file' %}" enctype="multipart/form-data" class="import-form">
+      {% csrf_token %}
+      <input type="hidden" name="import_kind" value="maternal_record">
+      <input class="form-control" type="file" name="import_file" accept=".csv,.xlsx" required>
+      <div class="import-actions">
+        <a class="link-button" href="{% url 'integrations:download_import_template' %}?kind=maternal_record">模板下载</a>
+        <button type="submit">上传并预检导入</button>
+      </div>
+    </form>
+    {% else %}
+      <p class="empty">当前角色无 Excel 上传权限。</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="section-header">
+      <h2>检验数据导入</h2>
+      {% if lab_template %}
+        <span class="subtle-text">当前模板：{{ lab_template.name }}</span>
+      {% endif %}
+    </div>
+    {% if can_upload_excel_import %}
+    <form method="post" action="{% url 'integrations:upload_import_file' %}" enctype="multipart/form-data" class="import-form">
+      {% csrf_token %}
+      <input type="hidden" name="import_kind" value="lab_result">
+      <input class="form-control" type="file" name="import_file" accept=".csv,.xlsx" required>
+      <div class="import-actions">
+        <a class="link-button" href="{% url 'integrations:download_import_template' %}?kind=lab_result">模板下载</a>
+        <button type="submit">上传并预检导入</button>
+      </div>
+    </form>
+    {% else %}
+      <p class="empty">当前角色无 Excel 上传权限。</p>
+    {% endif %}
+  </section>
+</section>
+
+<section class="panel">
+  <div class="section-header">
+    <h2>接口接入</h2>
+    {% if can_run_integration_task %}
+    <form method="post" action="{% url 'integrations:run_mock_pull' %}">
+      {% csrf_token %}
+      <button type="submit">执行 HIS/EMR 拉取</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <h3>接入源</h3>
+  <div class="table-wrap compact-table">
+    <table>
+      <thead>
+        <tr>
+          <th>编码</th>
+          <th>名称</th>
+          <th>类型</th>
+          <th>适配器</th>
+          <th>启用</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for source in sources %}
+        <tr>
+          <td>{{ source.code }}</td>
+          <td>{{ source.name }}</td>
+          <td>{{ source.get_source_kind_display }}</td>
+          <td>{{ source.adapter_path }}</td>
+          <td>{% if source.is_active %}是{% else %}否{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty">暂无接入源。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h3>接口任务</h3>
+  <div class="table-wrap compact-table">
+    <table>
+      <thead>
+        <tr>
+          <th>接入源</th>
+          <th>状态</th>
+          <th>读取数量</th>
+          <th>错误信息</th>
+          <th>创建时间</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in tasks %}
+        <tr>
+          <td>{{ task.source.name }}</td>
+          <td>{{ task.get_status_display }}</td>
+          <td>{{ task.pulled_count }}</td>
+          <td>{{ task.error_message|default:"-" }}</td>
+          <td>{{ task.created_at }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty">暂无接口任务。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>导入批次</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>文件名</th>
+          <th>导入类型</th>
+          <th>状态</th>
+          <th>总行数</th>
+          <th>成功</th>
+          <th>失败</th>
+          <th>覆盖</th>
+          <th>错误明细</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for batch in batches %}
+        <tr>
+          <td>{{ batch.file_name }}</td>
+          <td>{{ batch.get_import_kind_display }}</td>
+          <td>{{ batch.get_status_display }}</td>
+          <td>{{ batch.total_rows }}</td>
+          <td>{{ batch.success_rows }}</td>
+          <td>{{ batch.failed_rows }}</td>
+          <td>{{ batch.overwritten_rows }}</td>
+          <td>
+            {% if batch.error_json %}
+              <details>
+                <summary>查看</summary>
+                <pre>{{ batch.error_json }}</pre>
+              </details>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty">暂无导入批次。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

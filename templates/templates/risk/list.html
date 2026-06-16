@@ -1,0 +1,65 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>风险评估</h1>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-header">
+    <h2>评估记录</h2>
+    <form method="get" class="search-form">
+      <input class="form-control" name="q" value="{{ q }}" placeholder="搜索姓名、院内就诊号、评估编号、模型版本">
+      <button type="submit">搜索</button>
+      {% if q %}<a class="link-button" href="{% url 'risk:list' %}">重置</a>{% endif %}
+    </form>
+  </div>
+  <div class="table-wrap risk-list-table-wrap">
+    <table class="risk-list-table">
+      <colgroup>
+        <col class="risk-col-assessment">
+        <col class="risk-col-name">
+        <col class="risk-col-record">
+        <col class="risk-col-engine">
+        <col class="risk-col-level">
+        <col class="risk-col-probability">
+        <col class="risk-col-model">
+        <col class="risk-col-reason">
+        <col class="risk-col-time">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>评估编号</th>
+          <th>姓名</th>
+          <th>院内就诊号</th>
+          <th>引擎</th>
+          <th>风险等级</th>
+          <th>概率</th>
+          <th>模型版本</th>
+          <th>降级原因</th>
+          <th>时间</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in assessments %}
+        <tr>
+          <td class="risk-cell-assessment">{{ item.assessment_no|default:"-" }}</td>
+          <td class="risk-cell-name">{% if item.maternal_record %}{{ item.maternal_record.name }}{% else %}-{% endif %}</td>
+          <td class="risk-cell-record">{% if item.maternal_record %}{{ item.maternal_record.record_no }}{% else %}-{% endif %}</td>
+          <td class="risk-cell-engine">{{ item.get_engine_type_display }}</td>
+          <td class="risk-cell-level">{% if item.risk_level %}{{ item.get_risk_level_display }}{% else %}-{% endif %}</td>
+          <td class="risk-cell-probability">{% if item.risk_probability != None %}{{ item.risk_probability|floatformat:4 }}{% else %}-{% endif %}</td>
+          <td class="risk-cell-model">{{ item.display_model_version }}</td>
+          <td class="risk-cell-reason"><span title="{{ item.display_degradation_reason }}">{{ item.display_degradation_reason }}</span></td>
+          <td class="risk-cell-time">{{ item.created_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="empty">暂无评估记录。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

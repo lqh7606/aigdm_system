@@ -1,0 +1,109 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>新增检验</h1>
+  </div>
+  <a class="link-button button-large" href="{% url 'labs:list' %}">返回检验列表</a>
+</section>
+
+<section class="panel">
+  <h2>检验结果录入</h2>
+  <form method="post" class="form-grid lab-create-form">
+    {% csrf_token %}
+    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+    <input id="maternal-record-id" type="hidden" name="maternal_record_id" value="{{ selected_record_id }}">
+    <label class="autocomplete-field lab-record-field">
+      <span>孕妇档案</span>
+      <input
+        id="maternal-record-query"
+        class="form-control"
+        name="maternal_record_query"
+        value="{{ selected_record_label }}"
+        autocomplete="off"
+        placeholder="输入姓名或院内就诊号搜索"
+        required
+      >
+      <div id="maternal-record-results" class="autocomplete-results" hidden></div>
+    </label>
+    <label>
+      <span>检验项目</span>
+      <select class="form-control" name="item_code" required>
+        {% for value,label in item_choices %}
+          <option value="{{ value }}">{{ label }}（{{ value }}）</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label><span>检验值</span><input class="form-control" name="value" type="number" step="0.001" required></label>
+    <label><span>单位</span><input class="form-control" name="unit" value="mmol/L" required></label>
+    <div class="form-actions-row">
+      <button type="submit">保存检验结果</button>
+    </div>
+  </form>
+</section>
+
+<script>
+  (function () {
+    var input = document.getElementById("maternal-record-query");
+    var hidden = document.getElementById("maternal-record-id");
+    var results = document.getElementById("maternal-record-results");
+    var timer = null;
+
+    function clearResults() {
+      results.innerHTML = "";
+      results.hidden = true;
+    }
+
+    function renderResults(items) {
+      results.innerHTML = "";
+      if (!items.length) {
+        var empty = document.createElement("div");
+        empty.className = "autocomplete-empty";
+        empty.textContent = "没有匹配的可见档案";
+        results.appendChild(empty);
+        results.hidden = false;
+        return;
+      }
+
+      items.forEach(function (item) {
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "autocomplete-option";
+        button.textContent = item.label;
+        button.addEventListener("click", function () {
+          hidden.value = item.id;
+          input.value = item.label;
+          clearResults();
+        });
+        results.appendChild(button);
+      });
+      results.hidden = false;
+    }
+
+    input.addEventListener("input", function () {
+      hidden.value = "";
+      window.clearTimeout(timer);
+      var query = input.value.trim();
+      if (!query) {
+        clearResults();
+        return;
+      }
+      timer = window.setTimeout(function () {
+        window.fetch("{% url 'labs:record_search' %}?q=" + encodeURIComponent(query), {
+          headers: {"Accept": "application/json"}
+        })
+          .then(function (response) { return response.json(); })
+          .then(function (payload) { renderResults(payload.results || []); })
+          .catch(clearResults);
+      }, 180);
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!results.contains(event.target) && event.target !== input) {
+        clearResults();
+      }
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>系统登录 - 妊娠期糖尿病辅助诊疗系统</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body class="login-page">
+  <main class="login-shell">
+    <section class="login-panel">
+      <h1>妊娠期糖尿病辅助诊疗系统</h1>
+      <p>请输入院内账号登录，系统会按角色、科室和责任医生范围控制可访问数据。</p>
+      <form method="post" class="login-form">
+        {% csrf_token %}
+        {% if form.errors %}
+          <div class="form-error">账号或密码不正确，请重新输入。</div>
+        {% endif %}
+        <label>
+          <span>用户名</span>
+          {{ form.username }}
+        </label>
+        <label>
+          <span>密码</span>
+          {{ form.password }}
+        </label>
+        <button type="submit">登录系统</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+  <li class="aigdm-default-permissions-item">
+    <form class="aigdm-default-permissions-form" method="post" action="{% url 'admin:auth_group_apply_default_role_permissions' %}">
+      {% csrf_token %}
+      <button type="submit" class="aigdm-default-permissions-button">一键应用默认角色权限</button>
+    </form>
+  </li>
+  {{ block.super }}
+{% endblock %}

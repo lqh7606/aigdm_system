@@ -1,0 +1,76 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>随访任务</h1>
+    <p>{{ record.name }}（{{ record.record_no }}）</p>
+  </div>
+  <a class="link-button" href="{% url 'followups:home' %}">返回随访闭环</a>
+</section>
+
+<section class="panel">
+  <h2>任务信息</h2>
+  <dl class="definition-grid">
+    <dt>任务名称</dt><dd>{{ task.task_name }}</dd>
+    <dt>任务类型</dt><dd>{{ task.task_type }}</dd>
+    <dt>任务状态</dt><dd>{{ task.get_status_display }}</dd>
+    <dt>链路状态</dt><dd>{{ task.chain.get_status_display }}</dd>
+    <dt>截止时间</dt><dd>{{ task.due_at|default:"-" }}</dd>
+    <dt>负责人</dt><dd>{{ task.assigned_to|default:"-" }}</dd>
+    <dt>处理结果</dt><dd>{{ task.result_text|linebreaksbr|default:"-" }}</dd>
+  </dl>
+</section>
+
+{% if can_execute_followup and task.status != "DONE" and task.status != "CANCELLED" %}
+<section class="panel">
+  <h2>执行随访/登记复查</h2>
+  <form method="post" class="form-grid">
+    {% csrf_token %}
+    <label><span>联系方式</span><input class="form-control" name="contact_method" placeholder="电话、门诊、微信等"></label>
+    <label><span>复查时间</span><input class="form-control" name="review_time" type="datetime-local"></label>
+    <label>
+      <span>复查项目</span>
+      <select class="form-control" name="review_item_code">
+        <option value="">未登记检验结果</option>
+        {% for value,label in item_choices %}
+          <option value="{{ value }}">{{ label }}（{{ value }}）</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label><span>复查结果</span><input class="form-control" name="review_value" type="number" step="0.001"></label>
+    <label><span>复查单位</span><input class="form-control" name="review_unit" value="mmol/L"></label>
+    <label class="form-wide"><span>随访结果</span><textarea class="form-control" name="followup_result" rows="4" placeholder="填写饮食、运动、用药、宣教或复查情况"></textarea></label>
+    <label class="form-wide"><span>未完成原因</span><textarea class="form-control" name="unfinished_reason" rows="3" placeholder="无法完成时填写原因"></textarea></label>
+    <label class="form-wide"><span>备注</span><textarea class="form-control" name="remark" rows="3"></textarea></label>
+    <div class="form-actions-row">
+      <button type="submit">提交随访结果</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+
+{% if can_confirm_followup_outcome and task.status == "DONE" %}
+<section class="panel">
+  <h2>医生确认随访结局</h2>
+  <form method="post" action="{% url 'followups:confirm_task_outcome' task.pk %}" class="form-grid">
+    {% csrf_token %}
+    <label>
+      <span>确认结论</span>
+      <select class="form-control" name="decision">
+        <option value="CLOSE">已闭环</option>
+        <option value="CONTINUE">继续跟踪</option>
+        <option value="PLAN_NEXT">已计划下次随访</option>
+        <option value="TRANSFER">转诊完成</option>
+        <option value="LOST">失访确认</option>
+      </select>
+    </label>
+    <label><span>下次随访时间</span><input class="form-control" name="next_followup_at" type="datetime-local"></label>
+    <label class="form-wide"><span>医生确认意见</span><textarea class="form-control" name="doctor_comment" rows="4" required></textarea></label>
+    <div class="form-actions-row">
+      <button type="submit">确认结局</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

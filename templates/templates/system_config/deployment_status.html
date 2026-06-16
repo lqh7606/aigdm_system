@@ -1,0 +1,88 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>部署状态</h1>
+  </div>
+</section>
+
+<section class="metrics">
+  <article>
+    <span>配置文件</span>
+    <strong>{% if report.env_exists %}已配置{% else %}缺失{% endif %}</strong>
+  </article>
+  <article>
+    <span>数据库</span>
+    <strong>{{ report.database.name|default:"-" }}</strong>
+  </article>
+  <article>
+    <span>检查结果</span>
+    <strong>{% if report.has_error %}需处理{% elif report.has_warning %}有警告{% else %}正常{% endif %}</strong>
+  </article>
+  <article>
+    <span>重启提示</span>
+    <strong>需关注</strong>
+  </article>
+</section>
+
+<section class="panel">
+  <h2>启动前配置</h2>
+  <dl class="definition-grid">
+    <dt>.env 路径</dt><dd class="mono">{{ report.env_path }}</dd>
+    <dt>数据库引擎</dt><dd>{{ report.database.engine }}</dd>
+    <dt>数据库名称</dt><dd>{{ report.database.name|default:"-" }}</dd>
+    <dt>数据库地址</dt><dd>{{ report.database.host|default:"-" }}{% if report.database.port %}:{{ report.database.port }}{% endif %}</dd>
+    <dt>数据库用户</dt><dd>{{ report.database.user|default:"-" }}</dd>
+  </dl>
+  <p>{{ report.restart_required_note }}</p>
+</section>
+
+<section class="panel">
+  <h2>部署检查</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>检查项</th>
+          <th>状态</th>
+          <th>说明</th>
+          <th>建议</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in report.checks %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td><span class="status status-{{ item.state }}">{{ item.state_label }}</span></td>
+          <td>{{ item.message }}</td>
+          <td>{{ item.suggestion|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>环境变量概览</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>变量</th>
+          <th>当前值</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in report.env_values %}
+        <tr>
+          <td class="mono">{{ item.key }}</td>
+          <td class="mono">{{ item.value|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

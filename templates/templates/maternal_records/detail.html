@@ -1,0 +1,463 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>{{ record.name }}档案</h1>
+    <p>院内就诊号：{{ record.record_no }}</p>
+  </div>
+  <a class="link-button button-large" href="{% url 'maternal_records:list' %}">返回档案列表</a>
+</section>
+
+<section class="panel">
+  <h2>业务操作</h2>
+  <div class="row-actions business-actions">
+    {% if can_run_risk_assessment %}
+      <button class="business-action" type="button" id="risk-preview-open" data-preview-url="{% url 'risk:preview_record' record.pk %}">发起风险评估</button>
+    {% endif %}
+    {% if can_create_lab_result %}
+      <form method="get" action="{% url 'labs:create_result' %}">
+        <input type="hidden" name="record" value="{{ record.pk }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button class="business-action" type="submit">录入检验/复查</button>
+      </form>
+    {% endif %}
+    {% if can_confirm_ogtt %}
+      <form method="post" action="{% url 'labs:calculate_ogtt' record.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button class="business-action" type="submit">计算 OGTT 结局</button>
+      </form>
+    {% endif %}
+    {% if can_view_followups %}
+      <form method="get" action="{% url 'followups:home' %}">
+        <button class="business-action" type="submit">查看随访任务</button>
+      </form>
+    {% endif %}
+  </div>
+</section>
+
+{% if can_run_risk_assessment %}
+<dialog class="confirm-dialog risk-preview-dialog" id="risk-preview-dialog">
+  <form method="post" action="{% url 'risk:assess_record' record.pk %}" id="risk-assessment-submit-form">
+    {% csrf_token %}
+    <h3>确认本次风险评估输入</h3>
+    <p id="risk-preview-status">正在读取本次模型输入数据。</p>
+    <dl class="definition-grid risk-preview-meta">
+      <dt>完整模型版本</dt><dd id="risk-preview-full-version">-</dd>
+      <dt>降级模型版本</dt><dd id="risk-preview-degraded-version">-</dd>
+      <dt>规则版本</dt><dd id="risk-preview-rule-version">-</dd>
+      <dt>待确认异常</dt><dd id="risk-preview-abnormal">-</dd>
+      <dt>缺失字段</dt><dd id="risk-preview-missing">-</dd>
+    </dl>
+    <div class="table-wrap risk-preview-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>字段</th>
+            <th>本次输入值</th>
+          </tr>
+        </thead>
+        <tbody id="risk-preview-fields">
+          <tr><td colspan="2" class="empty">正在加载。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="button-secondary" id="risk-preview-cancel">取消</button>
+      <button type="submit">确认发起评估</button>
+    </div>
+  </form>
+</dialog>
+{% endif %}
+
+{% if record.ogtt_outcome %}
+<section class="panel">
+  <h2>OGTT 结局</h2>
+  <dl class="definition-grid">
+    <dt>空腹血糖</dt><dd>{{ record.ogtt_outcome.fasting_value|default:"-" }}</dd>
+    <dt>1小时血糖</dt><dd>{{ record.ogtt_outcome.one_hour_value|default:"-" }}</dd>
+    <dt>2小时血糖</dt><dd>{{ record.ogtt_outcome.two_hour_value|default:"-" }}</dd>
+    <dt>结局</dt><dd>{{ record.ogtt_outcome.get_outcome_display }}</dd>
+    <dt>确认状态</dt><dd>{{ record.ogtt_outcome.get_confirmation_status_display }}</dd>
+  </dl>
+  {% if can_confirm_ogtt and record.ogtt_outcome.confirmation_status == "PENDING" %}
+    <div class="row-actions ogtt-actions">
+      <form method="post" action="{% url 'labs:confirm_ogtt' record.ogtt_outcome.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <input type="hidden" name="decision" value="confirm">
+        <button type="submit">确认 OGTT</button>
+      </form>
+      <form method="post" action="{% url 'labs:confirm_ogtt' record.ogtt_outcome.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <input type="hidden" name="decision" value="reject">
+        <button class="button-secondary" type="submit">驳回 OGTT</button>
+      </form>
+    </div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>基础信息</h2>
+  {% if can_update_record %}
+  <form method="post" action="{% url 'maternal_records:update' record.pk %}" class="form-grid">
+    {% csrf_token %}
+    <label><span>院内就诊号</span><input class="form-control" value="{{ record.record_no }}" disabled></label>
+    {% if effective_role != "NURSE" %}
+    <label><span>姓名</span><input class="form-control" name="name" value="{{ record.name }}" required></label>
+    <label><span>证件号</span><input class="form-control" name="id_card" placeholder="{{ record.id_card_masked|default:'留空则不修改' }}"></label>
+    {% endif %}
+    <label><span>联系电话</span><input class="form-control" name="phone" placeholder="{{ record.phone_masked|default:'留空则不修改' }}"></label>
+    {% if effective_role != "NURSE" %}
+    <label><span>年龄</span><input class="form-control" name="age" type="number" min="12" max="60" value="{{ record.age|default:'' }}"></label>
+    {% endif %}
+    <label><span>末次月经</span><input class="form-control" name="last_menstrual_period" type="date" value="{{ record.last_menstrual_period|date:'Y-m-d' }}"></label>
+    {% if effective_role != "NURSE" %}
+    <label><span>预产期</span><input class="form-control" name="expected_delivery_date" type="date" value="{{ record.expected_delivery_date|date:'Y-m-d' }}"></label>
+    <label><span>当前孕周</span><input class="form-control" name="gestational_week" type="number" step="0.1" min="0" max="45" value="{{ record.gestational_week|default:'' }}"></label>
+    {% endif %}
+    <label><span>身高cm</span><input class="form-control" name="height_cm" type="number" step="0.1" value="{{ record.height_cm|default:'' }}"></label>
+    <label><span>孕前体重kg</span><input class="form-control" name="pre_preg_weight_kg" type="number" step="0.1" value="{{ record.pre_preg_weight_kg|default:'' }}"></label>
+    <label><span>当前体重kg</span><input class="form-control" name="current_weight_kg" type="number" step="0.1" value="{{ record.current_weight_kg|default:'' }}"></label>
+    <label><span>孕前BMI</span><input class="form-control" value="{{ record.pre_preg_bmi|default:'保存后按身高体重计算' }}" disabled></label>
+    <label><span>孕次</span><input class="form-control" name="pregnancy_count" type="number" min="0" value="{{ record.pregnancy_count|default:'' }}"></label>
+    <label><span>产次</span><input class="form-control" name="birth_count" type="number" min="0" value="{{ record.birth_count|default:'' }}"></label>
+    {% if effective_role != "NURSE" %}
+    <label><span>胎数</span><input class="form-control" name="fetal_count" type="number" min="1" value="{{ record.fetal_count|default:'1' }}"></label>
+    {% endif %}
+    <label><span>收缩压</span><input class="form-control" name="systolic_bp" type="number" value="{{ record.systolic_bp|default:'' }}"></label>
+    <label><span>舒张压</span><input class="form-control" name="diastolic_bp" type="number" value="{{ record.diastolic_bp|default:'' }}"></label>
+    <label><span>主要来源</span><input class="form-control" value="{{ record.get_source_type_display }}" disabled></label>
+    <div class="form-actions-row">
+      {% if effective_role != "NURSE" %}
+      <label class="checkbox-field"><input name="multiple_pregnancy" type="checkbox" {% if record.multiple_pregnancy %}checked{% endif %}> 多胎妊娠</label>
+      <label class="checkbox-field"><input name="diabetes_before_pregnancy" type="checkbox" {% if record.diabetes_before_pregnancy %}checked{% endif %}> 已确诊孕前糖尿病</label>
+      {% endif %}
+      <button type="submit">{% if effective_role == "NURSE" %}保存白名单补录{% else %}保存基础信息{% endif %}</button>
+    </div>
+  </form>
+  {% else %}
+    <p class="empty">当前角色仅可查看基础信息。</p>
+  {% endif %}
+</section>
+
+<section class="panel" id="record-lab-results">
+  <div class="section-title-row">
+    <h2>检验结果</h2>
+    {% if lab_results_page.paginator.count %}
+      <span class="subtle-text">共 {{ lab_results_page.paginator.count }} 条，第 {{ lab_results_page.number }} / {{ lab_results_page.paginator.num_pages }} 页</span>
+    {% endif %}
+  </div>
+  <div class="table-wrap record-lab-table-wrap">
+    <table class="record-lab-table">
+      <colgroup>
+        <col class="record-lab-col-date">
+        <col class="record-lab-col-item">
+        <col class="record-lab-col-value">
+        <col class="record-lab-col-abnormal">
+        <col class="record-lab-col-status">
+        <col class="record-lab-col-action">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>日期</th>
+          <th>项目</th>
+          <th>结果</th>
+          <th>异常</th>
+          <th>确认状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in lab_results_page %}
+        <tr class="{% if item.confirmation_status == "PENDING" %}lab-row-pending{% endif %}">
+          <td class="record-lab-date">
+            {% if item.reported_at %}{{ item.reported_at|date:"Y-m-d H:i" }}
+            {% elif item.sampled_at %}{{ item.sampled_at|date:"Y-m-d H:i" }}
+            {% else %}{{ item.created_at|date:"Y-m-d H:i" }}{% endif %}
+          </td>
+          <td class="record-lab-item">{{ item.item_name }}</td>
+          <td class="record-lab-value">{{ item.value }} {{ item.unit }}</td>
+          <td class="record-lab-abnormal">{% if item.is_abnormal %}是{% else %}否{% endif %}</td>
+          <td class="record-lab-status">
+            {% if item.confirmation_status == "PENDING" %}
+              <span class="status status-review">待核实</span>
+            {% else %}
+              {{ item.get_confirmation_status_display }}
+            {% endif %}
+          </td>
+          <td class="record-lab-action">
+            {% if item.confirmation_status == "PENDING" and can_confirm_lab %}
+              <div class="row-actions">
+                <form method="post" action="{% url 'labs:confirm' item.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}#record-lab-results">
+                  <input type="hidden" name="decision" value="confirm">
+                  <button type="submit">确认</button>
+                </form>
+                <form method="post" action="{% url 'labs:confirm' item.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}#record-lab-results">
+                  <input type="hidden" name="decision" value="reject">
+                  <button class="button-secondary" type="submit">排除</button>
+                </form>
+              </div>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty">暂无检验结果。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if lab_results_page.paginator.num_pages > 1 %}
+    <div class="pagination-bar">
+      <div class="pagination-links">
+        {% if lab_results_page.has_previous %}
+          <a class="link-button" href="?lab_page=1&risk_page={{ risk_assessments_page.number }}#record-lab-results">首页</a>
+          <a class="link-button" href="?lab_page={{ lab_results_page.previous_page_number }}&risk_page={{ risk_assessments_page.number }}#record-lab-results">上一页</a>
+        {% else %}
+          <span class="pagination-disabled">首页</span>
+          <span class="pagination-disabled">上一页</span>
+        {% endif %}
+        <span class="pagination-current">第 {{ lab_results_page.number }} / {{ lab_results_page.paginator.num_pages }} 页</span>
+        {% if lab_results_page.has_next %}
+          <a class="link-button" href="?lab_page={{ lab_results_page.next_page_number }}&risk_page={{ risk_assessments_page.number }}#record-lab-results">下一页</a>
+          <a class="link-button" href="?lab_page={{ lab_results_page.paginator.num_pages }}&risk_page={{ risk_assessments_page.number }}#record-lab-results">末页</a>
+        {% else %}
+          <span class="pagination-disabled">下一页</span>
+          <span class="pagination-disabled">末页</span>
+        {% endif %}
+      </div>
+      <form method="get" action="{{ request.path }}#record-lab-results" class="pagination-jump">
+        <input type="hidden" name="risk_page" value="{{ risk_assessments_page.number }}">
+        <label>
+          <span>跳至</span>
+          <input class="form-control" name="lab_page" type="number" min="1" max="{{ lab_results_page.paginator.num_pages }}" value="{{ lab_results_page.number }}">
+        </label>
+        <button type="submit">跳转</button>
+      </form>
+    </div>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>随访任务</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>链路状态</th>
+          <th>任务</th>
+          <th>任务状态</th>
+          <th>截止时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for chain in followup_chains %}
+          {% for task in chain.visible_tasks %}
+          <tr>
+            <td>{{ chain.get_status_display }}</td>
+            <td>{{ task.task_name }}</td>
+            <td>{{ task.get_status_display }}</td>
+            <td>{{ task.due_at|default:"-" }}</td>
+            <td>
+              <div class="row-actions">
+                <a class="link-button" href="{% url 'followups:task_detail' task.pk %}">查看/处理</a>
+                {% if can_execute_followup and task.status != "DONE" and task.status != "CANCELLED" %}
+                  <button class="button-danger task-delete-button" type="button" onclick="document.getElementById('task-delete-dialog-{{ task.pk }}').showModal()">删除</button>
+                  <dialog class="confirm-dialog" id="task-delete-dialog-{{ task.pk }}">
+                    <form method="post" action="{% url 'followups:cancel_task' task.pk %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <h3>确认删除随访任务</h3>
+                      <p>删除后任务将标记为已取消并从默认列表隐藏。</p>
+                      <label class="delete-reason-field">
+                        <span>删除原因</span>
+                        <textarea class="form-control" name="reason" rows="3">页面删除，任务已取消。</textarea>
+                      </label>
+                      <div class="dialog-actions">
+                        <button type="button" class="button-secondary" onclick="document.getElementById('task-delete-dialog-{{ task.pk }}').close()">取消</button>
+                        <button type="submit" class="button-danger">删除</button>
+                      </div>
+                    </form>
+                  </dialog>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="empty">该随访链暂无任务。</td></tr>
+          {% endfor %}
+        {% empty %}
+        <tr><td colspan="5" class="empty">暂无随访任务。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel" id="record-risk-assessments">
+  <div class="section-title-row">
+    <h2>最近风险评估</h2>
+    {% if risk_assessments_page.paginator.count %}
+      <span class="subtle-text">共 {{ risk_assessments_page.paginator.count }} 条，第 {{ risk_assessments_page.number }} / {{ risk_assessments_page.paginator.num_pages }} 页</span>
+    {% endif %}
+  </div>
+  <div class="table-wrap record-risk-table-wrap">
+    <table class="record-risk-table">
+      <colgroup>
+        <col class="record-risk-col-time">
+        <col class="record-risk-col-engine">
+        <col class="record-risk-col-model">
+        <col class="record-risk-col-level">
+        <col class="record-risk-col-probability">
+        <col class="record-risk-col-reason">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>引擎</th>
+          <th>模型版本</th>
+          <th>风险等级</th>
+          <th>概率</th>
+          <th>原因</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in risk_assessments_page %}
+        <tr>
+          <td class="record-risk-time">{{ item.created_at|date:"Y-m-d H:i" }}</td>
+          <td class="record-risk-engine">{{ item.get_engine_type_display }}</td>
+          <td class="record-risk-model">{{ item.display_model_version }}</td>
+          <td class="record-risk-level">{% if item.risk_level %}{{ item.get_risk_level_display }}{% else %}-{% endif %}</td>
+          <td class="record-risk-probability">{% if item.risk_probability != None %}{{ item.risk_probability|floatformat:4 }}{% else %}-{% endif %}</td>
+          <td class="record-risk-reason"><span title="{{ item.display_degradation_reason|default:'-' }}">{{ item.display_degradation_reason|default:"-" }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty">暂无风险评估。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if risk_assessments_page.paginator.num_pages > 1 %}
+    <div class="pagination-bar">
+      <div class="pagination-links">
+        {% if risk_assessments_page.has_previous %}
+          <a class="link-button" href="?lab_page={{ lab_results_page.number }}&risk_page=1#record-risk-assessments">首页</a>
+          <a class="link-button" href="?lab_page={{ lab_results_page.number }}&risk_page={{ risk_assessments_page.previous_page_number }}#record-risk-assessments">上一页</a>
+        {% else %}
+          <span class="pagination-disabled">首页</span>
+          <span class="pagination-disabled">上一页</span>
+        {% endif %}
+        <span class="pagination-current">第 {{ risk_assessments_page.number }} / {{ risk_assessments_page.paginator.num_pages }} 页</span>
+        {% if risk_assessments_page.has_next %}
+          <a class="link-button" href="?lab_page={{ lab_results_page.number }}&risk_page={{ risk_assessments_page.next_page_number }}#record-risk-assessments">下一页</a>
+          <a class="link-button" href="?lab_page={{ lab_results_page.number }}&risk_page={{ risk_assessments_page.paginator.num_pages }}#record-risk-assessments">末页</a>
+        {% else %}
+          <span class="pagination-disabled">下一页</span>
+          <span class="pagination-disabled">末页</span>
+        {% endif %}
+      </div>
+      <form method="get" action="{{ request.path }}#record-risk-assessments" class="pagination-jump">
+        <input type="hidden" name="lab_page" value="{{ lab_results_page.number }}">
+        <label>
+          <span>跳至</span>
+          <input class="form-control" name="risk_page" type="number" min="1" max="{{ risk_assessments_page.paginator.num_pages }}" value="{{ risk_assessments_page.number }}">
+        </label>
+        <button type="submit">跳转</button>
+      </form>
+    </div>
+  {% endif %}
+</section>
+{% if can_run_risk_assessment %}
+<script>
+  (function () {
+    var openButton = document.getElementById("risk-preview-open");
+    var dialog = document.getElementById("risk-preview-dialog");
+    var submitForm = document.getElementById("risk-assessment-submit-form");
+    var cancelButton = document.getElementById("risk-preview-cancel");
+    var statusEl = document.getElementById("risk-preview-status");
+    var fieldsBody = document.getElementById("risk-preview-fields");
+    var fullVersion = document.getElementById("risk-preview-full-version");
+    var degradedVersion = document.getElementById("risk-preview-degraded-version");
+    var ruleVersion = document.getElementById("risk-preview-rule-version");
+    var abnormal = document.getElementById("risk-preview-abnormal");
+    var missing = document.getElementById("risk-preview-missing");
+
+    function submitWithConfirm(message) {
+      if (window.confirm(message)) {
+        submitForm.submit();
+      }
+    }
+
+    function setText(el, value) {
+      el.textContent = value || "-";
+    }
+
+    function renderFields(fields) {
+      fieldsBody.innerHTML = "";
+      if (!fields || !fields.length) {
+        fieldsBody.innerHTML = '<tr><td colspan="2" class="empty">本次没有可用模型输入字段。</td></tr>';
+        return;
+      }
+      fields.forEach(function (item) {
+        var row = document.createElement("tr");
+        var nameCell = document.createElement("td");
+        var valueCell = document.createElement("td");
+        nameCell.textContent = item.display_name || item.name || "-";
+        valueCell.textContent = item.value === null || item.value === undefined || item.value === "" ? "-" : String(item.value);
+        row.appendChild(nameCell);
+        row.appendChild(valueCell);
+        fieldsBody.appendChild(row);
+      });
+    }
+
+    if (openButton && submitForm) {
+      openButton.addEventListener("click", function () {
+        if (!dialog || typeof dialog.showModal !== "function") {
+          submitWithConfirm("当前浏览器不支持弹窗预览，是否继续发起风险评估？");
+          return;
+        }
+        statusEl.textContent = "正在读取本次模型输入数据。";
+        fieldsBody.innerHTML = '<tr><td colspan="2" class="empty">正在加载。</td></tr>';
+        dialog.showModal();
+        window.fetch(openButton.dataset.previewUrl, {headers: {"Accept": "application/json"}})
+          .then(function (response) {
+            if (!response.ok) {
+              throw new Error("preview failed");
+            }
+            return response.json();
+          })
+          .then(function (payload) {
+            statusEl.textContent = "请确认以下数据将用于本次风险评估。";
+            setText(fullVersion, payload.model_versions && payload.model_versions.full);
+            setText(degradedVersion, payload.model_versions && payload.model_versions.degraded);
+            setText(ruleVersion, payload.rule_version);
+            setText(abnormal, payload.abnormal_summary && payload.abnormal_summary.has_pending_abnormal ? "有待确认异常" : "无待确认异常");
+            var missingFields = payload.missing_fields_display || payload.missing_fields || [];
+            setText(missing, missingFields.length ? missingFields.join("、") : "-");
+            renderFields(payload.fields || []);
+          })
+          .catch(function () {
+            dialog.close();
+            submitWithConfirm("无法加载模型输入预览，是否继续发起风险评估？");
+          });
+      });
+    }
+    if (cancelButton && dialog) {
+      cancelButton.addEventListener("click", function () {
+        dialog.close();
+      });
+    }
+  })();
+</script>
+{% endif %}
+{% endblock %}
