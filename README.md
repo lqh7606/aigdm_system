@@ -1,5 +1,7 @@
 # AIGDM System
 
+中文说明请见 [README_zh.md](README_zh.md)。
+
 AIGDM System is a Django-based clinical management system for gestational diabetes care. It supports maternal records, lab results, risk assessment, follow-up workflows, integration templates, and system configuration.
 
 ## Features

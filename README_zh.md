@@ -1,5 +1,7 @@
 # AIGDM 系统
 
+English version: [README.md](README.md)
+
 AIGDM 系统是一个基于 Django 的妊娠期糖尿病管理系统，覆盖孕产妇档案、检验结果、风险评估、随访流程、接入导入、系统配置和管理员后台。
 
 ## 主要功能
